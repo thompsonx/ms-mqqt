@@ -1,5 +1,6 @@
 import Tkinter as tk
 import sys
+from distutils.command.clean import clean
 
 import paho.mqtt.client as mqtt
 
@@ -79,6 +80,8 @@ class Window(tk.Frame):
             self.client = mqtt.Client()
             self.channel = "/mschat/all/anon"
         else:
+            # self.client = mqtt.Client(client_id=self.client_id, clean_session=False)
+            # self.client.username_pw_set(self.client_id, self.client_id)
             self.client = mqtt.Client(client_id=self.client_id)
             self.client.username_pw_set("mobilni", "Systemy")
             self.channel = "/mschat/all/" + self.client_id
@@ -87,10 +90,11 @@ class Window(tk.Frame):
                                 self.client_id + " is online", retain=True)
             self.client.on_connect = on_connect
             self.client.will_set("/mschat/all/" + self.client_id,
-                                self.client_id + " lost connection", retain=True)
+                                self.client_id + " is offline", retain=True)
 
         self.client.on_message = on_message
 
+        # self.client.connect(host="localhost", port=1883)
         self.client.connect(host="pcfeib425t.vsb.cz", port=1883)
         self.client.subscribe("/mschat/#", 0)
 
