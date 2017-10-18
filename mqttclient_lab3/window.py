@@ -1,5 +1,6 @@
 import Tkinter as tk
 import sys
+import time
 from distutils.command.clean import clean
 
 import paho.mqtt.client as mqtt
@@ -16,8 +17,10 @@ class Window(tk.Frame):
                 if "online" in msg.payload:
                     self.users[usr] = "online"
                     if self.usr_msg_queue.has_key(usr):
+                        time.sleep(1 / 100.0)
                         for t, m in self.usr_msg_queue[usr]:
                             self._send_msg(t, m)
+                        self.usr_msg_queue[usr] = []
                 if "offline" in msg.payload:
                     self.users[usr] = "offline"
             self.list.insert(0, _msg)
@@ -27,6 +30,7 @@ class Window(tk.Frame):
             self.client.subscribe("/mschat/#", 0)
             for topic, msg in self.msg_queue:
                 _client.publish(topic, msg)
+            self.msg_queue = []
             self.list.insert(0, "INFO: CONNECTED")
 
         def on_disconnect(_client, userdata, rc):
@@ -58,7 +62,7 @@ class Window(tk.Frame):
 
         self.client.reconnect_delay_set(min_delay=1, max_delay=1)
 
-        self.client.connect(host=self.srvaddr.get(), port=int(self.portentry.get()), keepalive=3)
+        self.client.connect(host=self.srvaddr.get(), port=int(self.portentry.get()), keepalive=10)
 
         self.client.loop_start()
 
@@ -74,7 +78,8 @@ class Window(tk.Frame):
                         self.usr_msg_queue[usr] = [(topic, msg)]
                     self.list.insert(0, "INFO: User %s is offline. Message saved to queue." % usr)
                 else:
-                    self.client.publish(topic, msg)
+                    self.client.publish(topic, msg, qos=2)
+                    print "SENT %s %s" % (topic, msg)
             else:
                 self.list.insert(0, "INFO: User %s does not exist." % usr)
         else:
